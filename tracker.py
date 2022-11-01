@@ -5,18 +5,22 @@ import numpy as np
 from cv2 import aruco
 import PID
 import Arm_Lib
-
+# Note: There is a servor rotation safty limit enabled form the library. if we need more rotation need to desable it
 class ArUcoTracker:
     def __init__(self):
         self.Arm = Arm_Lib.Arm_Device()
         self.target_servox=90
-        self.target_servoy=45
+        #self.target_servoy=45
+        self.target_servoy=90 # for 2 axis
         # profile 0x: (0.5, 0.2, 0.31)  Original PID x values
         # profile 0y: (0.5, 0.2, 0.35)  Original PID y values
-	# profile 1xy: (0.75, 0.1, 0.3) smooth but I need more fast
-	# profile 2xy: (0.7, 0.1, 0.5)  better if it can go a bit fast but this ok gor now
-        self.xservo_pid = PID.PositionalPID(0.7, 0.1, 0.5)
-        self.yservo_pid = PID.PositionalPID(0.7, 0.1, 0.5)
+	    # profile 1xy: (0.75, 0.1, 0.3) smooth but I need more fast
+	    # profile 2xy: (0.7, 0.1, 0.5)  better if it can go a bit fast but this ok for now
+        # profile 3xy: (0.6, 0.1, 0.7)  similar to 2xy
+        # profile for 2axis: (1,0.1,2)
+        # profile for 2axis: (0.5,0.1,0.3) final good tracking
+        self.xservo_pid = PID.PositionalPID(0.5,0.1,0.3)
+        self.yservo_pid = PID.PositionalPID(0.5,0.1,0.3)
         self.r = ()
 
     def detectMarker(self, img, markerSize=4, totalMarkers=50,draw=False):
@@ -40,34 +44,37 @@ class ArUcoTracker:
                 # r = cv.boundingRect(p0) # output=(x0,y0,w,h)
                 x = int(center[0])
                 y = int(center[1])
-                print('Tracking: {}, {}'.format(x,y), flush=True)
+                # print('Tracking: {}, {}'.format(x,y), flush=True)
                 cv.putText(img, "Tracking", (150,20), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
                 cv.circle(img,(x,y),20,(0,255,0),-1)
             # offset = 15
             # self.r = (r[0]-offset, r[1]-offset, r[2]+offset*2, r[3]+offset*2) # offsetting the boundary
             # cv.rectangle(img,(self.r[0],self.r[1]),(self.r[0]+self.r[2],self.r[1]+self.r[3]),(0,255,0),2)
 
-        point_x = x
-        point_y = y
-        if not (self.target_servox>=180 and point_x<=320 or self.target_servox<=0 and point_x>=320):
-            self.xservo_pid.SystemOutput = point_x
-            self.xservo_pid.SetStepSignal(320)
-            self.xservo_pid.SetInertiaTime(0.01, 0.1)
-            target_valuex = int(1500 + self.xservo_pid.SystemOutput)
-            self.target_servox = int((target_valuex - 500) / 10)
+            point_x = x
+            point_y = y
+            if not (self.target_servox>=180 and point_x<=320 or self.target_servox<=0 and point_x>=320):
+                self.xservo_pid.SystemOutput = point_x
+                self.xservo_pid.SetStepSignal(320)
+                self.xservo_pid.SetInertiaTime(0.01, 0.1)
+                target_valuex = int(1500 + self.xservo_pid.SystemOutput)
+                self.target_servox = int((target_valuex - 500) / 10)
 
-            if self.target_servox > 180:self.target_servox = 180
-            if self.target_servox < 0: self.target_servox = 0
-        if not (self.target_servoy>=180 and point_y<=240 or self.target_servoy<=0 and point_y>=240):
+                if self.target_servox > 180:self.target_servox = 180
+                if self.target_servox < 0: self.target_servox = 0
 
-            self.yservo_pid.SystemOutput = point_y
-            self.yservo_pid.SetStepSignal(240)
-            self.yservo_pid.SetInertiaTime(0.01, 0.1)
-            target_valuey = int(1500 + self.yservo_pid.SystemOutput)
-            self.target_servoy = int((target_valuey - 500) / 10) - 45
+            if not (self.target_servoy>=180 and point_y<=240 or self.target_servoy<=0 and point_y>=240):
+                self.yservo_pid.SystemOutput = point_y
+                self.yservo_pid.SetStepSignal(240)
+                self.yservo_pid.SetInertiaTime(0.01, 0.1)
+                target_valuey = int(1500 + self.yservo_pid.SystemOutput)
+                # self.target_servoy = int((target_valuey - 500) / 10) - 45
+                self.target_servoy = int((target_valuey - 500) / 10) # for 2 axis
+ 
+                if self.target_servoy > 360: self.target_servoy = 360
+                if self.target_servoy < 0: self.target_servoy = 0
 
-            if self.target_servoy > 360: self.target_servoy = 360
-            if self.target_servoy < 0: self.target_servoy = 0
-        joints_0 = [self.target_servox, 135, self.target_servoy / 2, self.target_servoy / 2, 90, 30]
-        self.Arm.Arm_serial_servo_write6_array(joints_0, 300)
+            #joints_0 = [self.target_servox, 135, self.target_servoy / 2, self.target_servoy / 2, 90, 30]
+            joints_0 = [self.target_servox, self.target_servoy, 0, 0, 0, 0] # for 2 axis
+            self.Arm.Arm_serial_servo_write6_array(joints_0, 300)
         return img
