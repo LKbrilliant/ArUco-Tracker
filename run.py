@@ -16,12 +16,15 @@ cam_ID = '/dev/v4l/by-id/usb-Microsoft_Microsoft®_LifeCam_HD-5000-video-index0'
 
 def main():
     tracker.Arm.Arm_serial_set_torque(1) # torque setting
-    joints_0 = [90, 150, 20, 20, 90, 30]
+    #joints_0 = [90, 150, 20, 20, 90, 30]
+    joints_0 = [90, 90, 0, 0, 0, 0] # for 2 axis
     tracker.Arm.Arm_serial_servo_write6_array(joints_0, 1500) # move arm to the initial resting position
 
     cam = cv.VideoCapture(cam_ID)
+    cam.set(cv.CAP_PROP_AUTO_EXPOSURE, 3) # Need to set auto exposure level to 3 and ten back to 1 to set an absolute value
+    cam.set(cv.CAP_PROP_AUTO_EXPOSURE, 1)
+    cam.set(cv.CAP_PROP_EXPOSURE, 5)   # minimize exposure to avoid detection failing due to bright overhead light
     cam.set(cv.CAP_PROP_AUTOFOCUS, 0) # Turn off autofocus on Microsoft camera
-    cam.set(cv.CAP_PROP_EXPOSURE,5)   # minimize exposure to avoid detection failing due to bright overhead light
     while True:
         timer = cv.getTickCount()
         _, frame = cam.read()
@@ -31,11 +34,11 @@ def main():
         fps = cv.getTickFrequency() / (cv.getTickCount() - timer)    
         # print('fps={}'.format(int(fps),end='\r'))
         cv.putText(frame, "FPS: {:02n}".format(int(fps)), (10,20), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-        cv.imshow('Tracking', frame)  # Uncomment when using with a monitor
+        #cv.imshow('Tracking', frame)  # Uncomment when using with a monitor
         if cv.waitKey(1) == ord('q'):
             cam.release()
-            cv.destroyAllWindows()
             break
+    cv.destroyAllWindows()
 
 if __name__ == '__main__':
     main()
