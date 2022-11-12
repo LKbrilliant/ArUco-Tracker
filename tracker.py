@@ -33,7 +33,6 @@ class ArUcoTracker:
         return [arr, ids]
 
     def follow(self, img):
-        self.Arm.Arm_RGB_set(50, 0, 0) #LED red
         x=320
         y=240
         corners, _ = self.detectMarker(img,draw=False)  # Detect ArUco marker corner=(1,1,4,2) for one marker
@@ -46,8 +45,8 @@ class ArUcoTracker:
                 x = int(center[0])
                 y = int(center[1])
                 # print('Tracking: {}, {}'.format(x,y), flush=True)
-                cv.putText(img, "Tracking", (150,20), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-                cv.circle(img,(x,y),20,(0,255,0),-1)
+                cv.putText(img, "Tracking", (100,20), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                cv.circle(img,(x,y),40,(0,255,0),1)
                 self.Arm.Arm_RGB_set(0, 50, 0) #LED green
             # offset = 15
             # self.r = (r[0]-offset, r[1]-offset, r[2]+offset*2, r[3]+offset*2) # offsetting the boundary
@@ -79,4 +78,6 @@ class ArUcoTracker:
             #joints_0 = [self.target_servox, 135, self.target_servoy / 2, self.target_servoy / 2, 90, 30]
             joints_0 = [self.target_servox, self.target_servoy, 0, 0, 0, 0] # for 2 axis
             self.Arm.Arm_serial_servo_write6_array(joints_0, 300)
+        else: 
+            self.Arm.Arm_RGB_set(50, 0, 0) #LED red
         return img
