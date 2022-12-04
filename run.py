@@ -34,7 +34,7 @@ def main():
         fps = cv.getTickFrequency() / (cv.getTickCount() - timer)    
         # print('fps={}'.format(int(fps),end='\r'))
         cv.putText(frame, "FPS: {:02n}".format(int(fps)), (10,20), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-        #cv.imshow('Tracking', frame)  # Uncomment when using with a monitor
+        cv.imshow('Tracking', frame)  # Uncomment when using with a monitor
         if cv.waitKey(1) == ord('q'):
             cam.release()
             break
